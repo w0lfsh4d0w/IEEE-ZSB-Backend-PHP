@@ -1,15 +1,5 @@
-<!DOCTYPE html>
-<html lang="en">
+  <?php
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Demo</title>
-</head>
-
-<body>
-    <h1>Recommended Books</h1>
-    <?php
     $books = [
         [
             'name' => "Matarelist",
@@ -27,21 +17,9 @@
             'releaseYear' => "2000"
         ]
     ];
-   
-    $filterdBooks = array_filter($books, function($book){
-        return $book['author']==='Dakota Jhonson';
+
+    $filterdBooks = array_filter($books, function ($book) {
+        return $book['author'] === 'Dakota Jhonson';
     });
-    ?>
-    <ul>
-        <?php foreach ($filterdBooks as $book): ?>
-            <li>
-                <?= $book['name'] ?> <?= "Written BY : {$book['author']} ." ?>
-            </li>
-
-
-        <?php endforeach ?>
-    </ul>
-
-</body>
-
-</html>
+    
+    require "index.view.php";
