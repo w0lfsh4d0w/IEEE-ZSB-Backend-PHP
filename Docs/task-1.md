@@ -314,4 +314,76 @@ class Database
 ```
 
 and i will take the return from the statement and display it as i want.
+__
 
+## Make Database Class Clean and Flexible
+
+**clean** → easy to read and understand  
+**flexible** → easy to edit and add features without breaking other functions
+
+our problem is:
+
+```php
+$dsn = "mysql:host=localhost;port=3306;dbname=myapp;charset=utf8mb4";
+$pdo = new PDO($dsn, 'lara_user', 'password123');
+```
+
+This is **hard-coded**.
+
+Imagine now we are in development, staging, or any other environment and we want to change this configuration.  
+Now it is hard because it is hard-coded.
+
+The solution is to **separate the configuration away from the Database class**.
+
+```php
+config.php
+<?php
+
+// This file returns our configuration
+return [
+    'host' => 'localhost',
+    'port' => 3306,
+    'database' => 'myapp',
+    'charset' => 'utf8mb4'
+];
+```
+
+When we want to use it, we require it like this:
+
+```php
+$config = require 'config.php';
+
+$db = new Database($config['database']);
+```
+
+and we can have different config files that contain the configuration settings  
+for different environments like **development** or **production**,  
+and we choose the correct one.
+
+---
+
+now we want to make the **DSN dynamic**.
+
+we will use the function `http_build_query()`.
+
+```php
+function __construct($config, $username, $password)
+{
+    $dsn = 'mysql:' . http_build_query($config, '', ';');
+}
+```
+
+this makes the query dynamic, and the username and password are also passed dynamically.
+
+---
+
+and if we want to add options like the **retrieve data option**,  
+we can put them in an **options array** for PDO.
+
+like this:
+
+```php
+new PDO($dsn, $username, $password, [
+    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+]);
+```
