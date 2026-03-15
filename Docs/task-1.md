@@ -387,3 +387,60 @@ new PDO($dsn, $username, $password, [
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
 ]);
 ```
+## SQL Injection
+
+If we have posts and every post has an **id**, we take this id from the URL and put it in our query to fetch the data for this id.
+
+and we do it like this:
+
+```php
+// GET -> super global to take id from url
+$id = $_GET['id']; // returns a value like 1
+
+// This query is very bad because we take the input or variable
+// and inline it directly in the query
+$query = "SELECT * FROM posts WHERE id = {$id}";
+
+$statement = $pdo->query($query);
+// and here the query is executed directly
+```
+
+If the user adds **malicious code** like this:
+
+```
+id = 5 OR 1=1
+```
+
+this will retrieve **all data**, not only the data for a specific id.
+
+The attacker can also try something like:
+
+```
+DROP TABLE users
+```
+
+and if the query is executed, this can be a disaster.
+
+---
+
+### The Solution
+
+The solution is **Prepared Statements**.
+
+We separate the query from the variable.
+
+The query goes to MySQL first to be prepared and checked,  
+then the variable is sent separately and treated as **data**, not as a command.
+
+like this:
+
+```php
+$id = $_GET['id'];
+
+$query = "SELECT * FROM posts WHERE id = ?";
+
+$statement = $pdo->prepare($query);
+$statement->execute([$id]);
+```
+
+This is a **safe way** and helps avoid **SQL Injection**.
