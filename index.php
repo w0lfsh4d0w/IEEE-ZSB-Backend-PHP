@@ -1,47 +1,11 @@
-<!DOCTYPE html>
-<html lang="en">
+<?php
+require 'functions.php';
+require 'Database.php';
+//require 'router.php';
+$config=require 'config.php';
+$db=new Database($config['database']);
+$id=$_GET['id'];
+$query="select * from posts where id = :id";
+$post=$db->query($query,['id'=>$id])->fetch();
+dd($post);
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Demo</title>
-</head>
-
-<body>
-    <h1>Recommended Books</h1>
-    <?php
-    $books = [
-        [
-            'name' => "Matarelist",
-            'author' => "Dakota Jhonson",
-            'releaseYear' => "2025"
-        ],
-        [
-            'name' => "Fifty shades of gray",
-            'author' => "Dakota Jhonson",
-            'releaseYear' => "2015"
-        ],
-        [
-            'name' => "Do android stream",
-            'author' => "Kiven metnic",
-            'releaseYear' => "2000"
-        ]
-    ];
-   
-    $filterdBooks = array_filter($books, function($book){
-        return $book['author']==='Dakota Jhonson';
-    });
-    ?>
-    <ul>
-        <?php foreach ($filterdBooks as $book): ?>
-            <li>
-                <?= $book['name'] ?> <?= "Written BY : {$book['author']} ." ?>
-            </li>
-
-
-        <?php endforeach ?>
-    </ul>
-
-</body>
-
-</html>
