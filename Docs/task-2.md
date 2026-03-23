@@ -162,3 +162,106 @@ our code becomes more:
 - clean  
 - flexible  
 - scalable
+
+## Forms and Request Method
+
+when the user needs to add a new note, this is an input case.  
+when the user gives us input, this is the place where we need a **form**.
+
+what is a form?  
+a user interface component, typically a window or a document, containing interactive controls such as text fields, buttons, and checkboxes, designed to collect user input.
+
+```html
+<form>
+	<label for="body">Note Body:</label>
+	<textarea id="body" name="body"></textarea>
+
+	<button type="submit">Create</button>
+</form>
+```
+
+after we collect the user input, what happens?
+
+there are two important things in forms:
+
+---
+
+### 1. Request Methods (GET / POST)
+
+#### GET
+
+we use it to **fetch pages** or **search**.  
+this is a safe process. if you reload the page 1000 times, it will not change anything in the database.
+
+```html
+<form method="GET">
+</form>
+```
+
+---
+
+#### POST
+
+we use it to **send data**, like adding data to the database.  
+it is **not idempotent**, because sending the data multiple times will change the database multiple times.
+
+```html
+<form method="POST">
+</form>
+```
+
+---
+
+### 2. Where does the data go?
+
+```html
+<form action="note.php">
+</form>
+```
+
+the `action` attribute decides where the data will go.  
+if we add a page, it will go to that page.  
+if we do not specify a page, the default is the **same page**.
+
+---
+
+### Handling the Request in PHP
+
+in the target page, we do something like this:
+
+```php
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // we can access the data using superglobals
+    var_dump($_POST); // to see all data in the array
+    die(); // stop the code to show the result
+}
+```
+
+this is just to clarify the concept.
+
+---
+
+### How we access form data
+
+we deal with the data using the **name attribute** in the input.
+
+```html
+<form>
+	<label for="body">Note Body:</label>
+	<textarea id="body" name="body"></textarea>
+
+	<button type="submit">Create</button>
+</form>
+```
+
+this:
+
+```
+name="body"
+```
+
+is the attribute we use to handle every single input.
+This is the steps to add page to create note in genral concept 
+___
+
+
