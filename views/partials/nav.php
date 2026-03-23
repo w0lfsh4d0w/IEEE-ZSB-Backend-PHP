@@ -11,6 +11,7 @@
                                   <!-- // nav !!!!!!!!!!!! -->
                                 <a href="/" class="<?= isUrl('/') ?'rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white' : 'rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-white/5 hover:text-white'; ?>">Home</a>
                                 <a href="/about" class="<?=  isUrl('/about')  ?'rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white' : 'rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-white/5 hover:text-white'; ?>">About</a>
+                                <a href="/notes" class="<?=  isUrl('/notes')  ?'rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white' : 'rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-white/5 hover:text-white'; ?>">Notes</a>
                                 <a href="/contact" class="<?=  isUrl('/contact')  ?'rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white' : 'rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-white/5 hover:text-white'; ?>">Contact</a>
                             
                             </div>
