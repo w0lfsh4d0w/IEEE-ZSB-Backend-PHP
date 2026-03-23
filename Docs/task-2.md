@@ -264,4 +264,120 @@ is the attribute we use to handle every single input.
 This is the steps to add page to create note in genral concept 
 ___
 
+## Always Escape Untrusted Input
 
+now we get input from the user, but by default we should assume the user may try to damage the system  
+or add HTML or JavaScript code instead of a normal note.
+
+```html
+<script>alert('Hi from JavaScript');</script>
+```
+
+like this.
+
+if we save this in our database,  
+when we open the notes page, the browser will read this code and execute it.
+
+and anyone who visits the page will see a pop-up window (alert).
+
+this is called **XSS Injection**.
+
+this can escalate to:
+
+- stealing cookies  
+- redirecting the user to another malicious page  
+
+
+
+### The Solution
+
+the solution is to **escape the output**.
+
+we have a PHP function called `htmlspecialchars()`.
+
+it converts special characters that the browser understands  
+into HTML entities (safe strings).
+
+___
+## Form Validation
+
+to add the first validation like making sure the textarea is not empty,  
+we can use:
+
+```html
+<textarea name="body" required></textarea>
+```
+
+this is **client-side validation**, and it works only in the browser.
+
+and this is not enough.  
+anyone who has simple knowledge in the terminal  
+can send a request using HTTP like this:
+
+```bash
+curl -X POST http://localhost:8888/note/create -d "body="
+```
+
+and in this case, he bypasses our validation.
+
+so we need to make **server-side validation**.
+
+we need to check this data in our controller before we send it to the database.
+
+---
+
+we make simple steps:
+
+like initializing an array to store errors,  
+and check the data in `$_POST` with our conditions.
+
+```php
+$errors = [];
+
+// check it is not empty
+if (strlen($_POST['body']) === 0) {
+	$errors['body'] = 'A body is required';
+}
+
+// check max length
+if (strlen($_POST['body']) > 1000) {
+	$errors['body'] = 'The body cannot be more than 1000 characters';
+}
+
+if (empty($errors)) {
+    // if it is empty we will run our query to the database here
+} else {
+	require 'views/note-create.view.php';
+}
+```
+
+---
+
+but now we need some feedback for the user to know his mistake.
+
+we go to the view page and do:
+
+```php
+<?php if (isset($errors['body'])) : ?>
+	<p class="text-red-500 text-xs mt-2">
+		<?= $errors['body'] ?>
+	</p>
+<?php endif; ?>
+```
+
+this checks if `$errors['body']` is set and shows it to the user.
+
+---
+
+in case the user enters text longer than the max length,  
+we should not make him start from zero.
+
+we allow him to edit his previous input like this:
+
+```php
+<textarea id="body" name="body"><?= $_POST['body'] ?? '' ?></textarea>
+```
+
+this code checks if `$_POST['body']` exists.  
+if it exists, we show it to the user.  
+if not, we show an empty string.  
