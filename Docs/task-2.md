@@ -381,3 +381,61 @@ we allow him to edit his previous input like this:
 this code checks if `$_POST['body']` exists.  
 if it exists, we show it to the user.  
 if not, we show an empty string.  
+___
+
+## Extract a Simple Validator Class
+
+why do we need a validator class?
+
+imagine we have a register page, add note page, and add articles page.  
+it is not logical to add validation functions in every single page.
+
+so we will put them in a class and call it when we need.
+
+like this:
+
+```php
+class Validator {
+	public static function string($value, $min = 1, $max = INF) {
+		$value = trim($value);
+
+		return strlen($value) >= $min && strlen($value) <= $max;
+	}
+}
+```
+
+`trim()` function → removes any spaces before or after the string.  
+it solves the problem when the user enters only spaces.
+
+this check:
+
+```php
+strlen($value) >= $min && strlen($value) <= $max;
+```
+
+does the job of the two functions we wrote before:
+
+- check it is not empty  
+- check the length range  
+
+---
+
+### Important thing
+
+this `string` function is a **pure function**.  
+it does not depend on anything external and does not use `$this`.
+
+so we make it **static**.
+
+and if we want to validate anywhere,  
+we can call the function without creating an instance of the class.
+
+---
+
+### Usage in controller
+
+```php
+if (! Validator::string($_POST['body'], 1, 1000)) {
+	$errors['body'] = 'A body of no more than 1000 characters is required.';
+}
+```
