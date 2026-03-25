@@ -180,3 +180,148 @@ PHP will automatically search and load the file.
 - reusable helpers  
 - automatic class loading  
 ___
+
+## Namespaces
+
+what is it?
+
+imagine you have two files in your project with the same class name.  
+how do you differentiate between them?
+
+namespaces are like logical containers that group classes and avoid naming conflicts.
+
+### How to Define a Namespace
+
+we define it inside the class file:
+
+```php
+<?php
+
+namespace Core;
+
+class Database {
+	// class methods
+}
+```
+
+---
+
+### Problem After Adding Namespace
+
+now the project will break. why?
+
+when you call:
+
+```php
+$db = new Database();
+```
+
+PHP will look for:
+
+```
+Core\Database
+```
+
+not just `Database`.
+
+---
+
+### Solution → Import the Class
+
+we use the `use` keyword in the controller:
+
+```php
+use Core\Database;
+
+$db = new Database();
+```
+
+---
+
+### Fixing Autoloading with Namespaces
+
+before, our autoloader worked like this:
+
+```
+Core/Database.php
+```
+
+but now PHP gives:
+
+```
+Core\Database
+```
+
+with backslashes.
+
+the problem:
+
+- namespaces use `\`
+- operating systems use `/`
+
+---
+
+### Solution → Replace Slashes
+
+```php
+spl_autoload_register(function ($class) {
+
+	$class = str_replace('\\', DIRECTORY_SEPARATOR, $class);
+
+	require base_path("{$class}.php");
+});
+```
+
+---
+
+### Problem with Global Classes (PDO)
+
+when we are inside a namespace like `Core`,  
+PHP assumes all classes belong to this namespace.
+
+so if we write:
+
+```php
+$pdo = new PDO();
+```
+
+PHP will search for:
+
+```
+Core\PDO
+```
+
+and this will cause an error:
+
+```
+Class 'Core\PDO' not found
+```
+
+---
+
+### Solution 1 → Use Global Namespace
+
+```php
+$pdo = new \PDO(...);
+```
+
+this tells PHP to look in the global namespace.
+
+---
+
+### Solution 2 → Import the Class
+
+```php
+namespace Core;
+
+use PDO;
+
+class Database {
+	public function connect() {
+		$pdo = new PDO(...);
+	}
+}
+```
+
+---
+___
