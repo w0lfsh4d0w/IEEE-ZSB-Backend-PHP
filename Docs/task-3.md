@@ -629,3 +629,135 @@ $method = $_POST['_method'] ?? $_SERVER['REQUEST_METHOD'];
 $router->route($uri, $method);
 ```
 ___
+## One Request, One Controller
+
+`note.php` was responsible for both:
+
+- showing the note  
+- deleting the note  
+
+we want to apply **Single Responsibility Principle**  
+→ one controller = one job.
+
+---
+
+### Update Routes
+
+```php
+$router->get('/note', 'controllers/notes/show.php');
+
+$router->delete('/note', 'controllers/notes/destroy.php');
+```
+
+---
+
+### Destroy Controller
+
+in `controllers/notes/destroy.php`  
+this file will only handle delete requests.
+
+we don’t need to check the request method again,  
+because the router already handles it.
+
+```php
+<?php
+
+$config = require base_path('config.php');
+$db = new Database($config['database']);
+
+$id = $_POST['id'];
+
+// authorization check
+$currentUserId = 1;
+
+$note = $db->query('select * from notes where id = :id', [
+    'id' => $id
+])->findOrFail();
+
+authorize($note['user_id'] === $currentUserId);
+
+// delete query
+$db->query('delete from notes where id = :id', [
+    'id' => $id
+]);
+
+// redirect after delete
+header('location: /notes');
+exit();
+```
+
+---
+
+## RESTful Conventions
+
+we also split the create logic into two controllers:
+
+- `create` → show the form  
+- `store` → handle form submission  
+
+---
+
+### Routes
+
+```php
+$router->get('/notes/create', 'controllers/notes/create.php');
+
+$router->post('/notes', 'controllers/notes/store.php');
+```
+
+---
+
+### Create Controller
+
+this controller only returns the view (form):
+
+```php
+<?php
+
+view("notes/create.view.php", [
+    'heading' => 'Create Note',
+    'errors' => []
+]);
+```
+
+---
+
+### Store Controller
+
+this controller handles the POST request:
+
+```php
+<?php
+
+$config = require base_path('config.php');
+$db = new Database($config['database']);
+
+$errors = [];
+
+// validation
+if (! Validator::string($_POST['body'], 1, 1000)) {
+    $errors['body'] = 'A body of no more than 1,000 characters is required.';
+}
+
+// early return if validation fails
+if (! empty($errors)) {
+    return view("notes/create.view.php", [
+        'heading' => 'Create Note',
+        'errors' => $errors
+    ]);
+}
+
+// insert into database
+$db->query('INSERT INTO notes(body, user_id) VALUES(:body, :user_id)', [
+    'body' => $_POST['body'],
+    'user_id' => 1
+]);
+
+// redirect after success
+header('location: /notes');
+die();
+```
+
+---
+
+ 
