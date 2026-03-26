@@ -325,3 +325,307 @@ class Database {
 
 ---
 ___
+
+## Add Delete Note
+
+now in a page like `note.php`, we show a single note,  
+and we want to add a **Delete button** to delete this note.
+
+we will not use an anchor tag `<a>`  
+because it is **idempotent**, and we explained that before.  
+
+so we will use a form to send a **POST request**.
+
+---
+
+### In show.view.php
+
+```html
+<form method="POST">
+    <input type="hidden" name="id" value="<?= $note['id'] ?>">
+    
+    <button type="submit" class="text-sm text-red-500 mt-4">
+        Delete
+    </button>
+</form>
+```
+
+`<input type="hidden" ...>`  
+this input is hidden because it is not useful for the user to see it,  
+but it will be sent to the controller in the POST request  
+to tell us which note to delete.
+
+---
+
+### Controller Code
+
+```php
+<?php
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    // fetch the note to verify ownership
+    $note = $db->query('SELECT * FROM notes WHERE id = :id', [
+        'id' => $_POST['id']
+    ])->findOrFail();
+
+    $currentUserId = 1;
+
+    // authorization check
+    authorize($note['user_id'] === $currentUserId);
+
+    // delete the note
+    $db->query('DELETE FROM notes WHERE id = :id', [
+        'id' => $_POST['id']
+    ]);
+
+    // redirect after delete
+    header('Location: /notes');
+    exit();
+
+} else {
+
+    // fetch note for display
+    $note = $db->query('SELECT * FROM notes WHERE id = :id', [
+        'id' => $_GET['id']
+    ])->findOrFail();
+
+    authorize($note['user_id'] === 1);
+
+    view('notes/show.view.php', [
+        'heading' => 'Note',
+        'note' => $note
+    ]);
+}
+```
+
+---
+
+### What This Code Does
+
+1. detect the request method (POST or GET)  
+2. if POST → fetch the note (not to display it, but to check ownership)  
+3. compare the current user id with the note owner (to prevent IDOR)  
+4. if authorized → execute delete query  
+5. redirect back to the notes page  
+
+___
+## Build a Better Router
+
+our router was depending only on the URI.  
+for example, if the user visits `/note`, it goes to `note.php`.
+
+the problem:
+
+we have different actions on the same URI:
+
+- show note → GET  
+- create note → POST  
+- delete note → DELETE  
+
+all of them use `/note`.
+
+this forces us to write complex `if` conditions in the controller  
+to check the request method, and this makes the code messy and hard to maintain.
+
+---
+
+### Solution
+
+we create a router object responsible for:
+
+- handling URI  
+- handling request method  
+
+we define routes like this:
+
+```php
+// routes.php
+
+$router->get('/', 'controllers/index.php');
+$router->get('/note', 'controllers/notes/show.php');
+
+$router->post('/note', 'controllers/notes/store.php');
+
+$router->delete('/note', 'controllers/notes/destroy.php');
+```
+
+---
+
+### Router Class
+
+```php
+<?php
+
+class Router {
+
+    protected $routes = [];
+
+    protected function add($method, $uri, $controller) {
+        $this->routes[] = [
+            'uri' => $uri,
+            'controller' => $controller,
+            'method' => $method
+        ];
+    }
+
+    public function get($uri, $controller) {
+        $this->add('GET', $uri, $controller);
+    }
+
+    public function post($uri, $controller) {
+        $this->add('POST', $uri, $controller);
+    }
+
+    public function delete($uri, $controller) {
+        $this->add('DELETE', $uri, $controller);
+    }
+
+    public function patch($uri, $controller) {
+        $this->add('PATCH', $uri, $controller);
+    }
+
+    public function put($uri, $controller) {
+        $this->add('PUT', $uri, $controller);
+    }
+}
+```
+
+---
+
+### Explanation
+
+- `$routes` is protected → cannot be modified directly  
+- `add()` → avoids repeating code in every method  
+
+---
+
+### Registering Routes
+
+in `index.php`:
+
+```php
+$router = new \Core\Router();
+
+$routes = require base_path('routes.php');
+```
+
+this will store all routes inside the `$routes` array.
+
+---
+
+### Route Method
+
+```php
+public function route($uri, $method) {
+    foreach ($this->routes as $route) {
+        if ($route['uri'] === $uri && $route['method'] === strtoupper($method)) {
+            return require base_path($route['controller']);
+        }
+    }
+
+    $this->abort();
+}
+
+protected function abort($code = 404) {
+    http_response_code($code);
+    require base_path("views/{$code}.php");
+    die();
+}
+```
+
+this function compares:
+
+- incoming URI  
+- request method  
+
+with stored routes.
+
+---
+
+### Problem with Forms
+
+HTML forms only support:
+
+- GET  
+- POST  
+
+so we cannot send DELETE, PUT, PATCH directly.
+
+---
+
+### Solution → Method Spoofing
+
+```html
+<form method="POST" action="/note">
+    <input type="hidden" name="_method" value="DELETE">
+    
+    <button type="submit">Delete Note</button>
+</form>
+```
+
+---
+
+### Entry Point (index.php)
+
+```php
+<?php
+
+require 'Router.php';
+
+$router = new Router();
+
+require 'routes.php';
+
+$uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+
+$method = $_POST['_method'] ?? $_SERVER['REQUEST_METHOD'];
+
+$router->route($uri, $method);
+```
+
+---
+### What Happens in index.php (Step by Step)
+
+1. load the core files and create a Router instance
+
+```php
+require 'Router.php';
+$router = new Router();
+```
+
+---
+
+2. load the routes file to register all routes inside the router
+
+```php
+require 'routes.php';
+```
+
+---
+
+3. get the current URI from the browser request
+
+```php
+$uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+```
+
+---
+
+4. detect the real request method
+
+if there is a hidden `_method` field (method spoofing), use it  
+otherwise use the default request method from the server
+
+```php
+$method = $_POST['_method'] ?? $_SERVER['REQUEST_METHOD'];
+```
+
+---
+
+5. send the URI and method to the router to handle the request
+
+```php
+$router->route($uri, $method);
+```
+___
