@@ -759,5 +759,92 @@ die();
 ```
 
 ---
+____
+## Make first service container
+our proplem is Repeated Data Base setup every time an any file we want to call our db class er repear this
+```php
+$config = require base_path('config.php');
 
- 
+$db = new Database($config['database']);
+````
+
+the soultion is to build the database once of time and oush it in container and wehen we need it we take it from container
+
+```php
+<?php
+
+class Container
+{
+    protected $bindings = [];
+
+    public function bind($key, $resolver)
+    {
+        $this->bindings[$key] = $resolver;
+    }
+
+    public function resolve($key)
+    {
+        if (! array_key_exists($key, $this->bindings)) {
+            throw new Exception("No matching binding found for {$key}");
+        }
+
+        $resolver = $this->bindings[$key];
+
+        return call_user_func($resolver);
+    }
+}
+```
+
+we have tow main funs in our container
+bind -> take the key and our fun is depend on build the object
+resolve -> find the key in our protected array and run the function
+
+our Bootstrap Playground
+
+to call this functions
+
+```php
+<?php
+
+$container = new Container();
+
+$container->bind('Core\\Database', function () {
+    $config = require base_path('config.php');
+    return new Database($config['database']);
+});
+```
+
+we want to call this fuction frim any wher we make a app clas and this function be static
+
+```php
+<?php
+
+class App
+{
+    protected static $container;
+
+    public static function setContainer($container)
+    {
+        static::$container = $container;
+    }
+
+    public static function container()
+    {
+        return static::$container;
+    }
+}
+```
+
+and in the boot strap we call the class
+
+```php
+App::setContainer($container);
+```
+
+and any where in our controllers we call data bse by this
+
+```php
+$db = App::resolve(Database::class);
+
+$db->query("DELETE FROM notes WHERE id = 1");
+```
