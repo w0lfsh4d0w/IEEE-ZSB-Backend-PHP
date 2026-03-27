@@ -944,7 +944,128 @@ $db->query('UPDATE notes SET body=:body WHERE id=:id',[
 header('location: /notes');
 die();
 ```
+___
+
+## Session And Registration
+our http protocol is stateless -> meaning if you change any page the app doesn't know you, session makes it stateful
+start session
+```php
+<?php
+// index.php
+// this function must be called before any session interaction
+session_start();
+````
+
+put data
+
+```php
+<?php
+// IndexController.php
+// store name inside a key called 'name'
+$_SESSION['name'] = 'Jeffrey';
+```
+
+if we make a register page
+
+```php
+// routes.php
+$router->get('/register','controllers/registration/create.php');
+```
+
+```php
+// controllers/registration/create.php
+// this file only renders the view page
+require 'views/registration/create.view.php';
+```
+
+form to send data
+
+```php
+<form action="/register" method="POST">
+    <div>
+        <label for="email">Email Address</label>
+        <input type="email" id="email" name="email" required>
+        <?php if(isset($errors['email'])): ?>
+            <p class="text-red-500 text-xs mt-2"><?= $errors['email'] ?></p>
+        <?php endif; ?>
+    </div>
+    <div>
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required>
+        <?php if(isset($errors['password'])): ?>
+            <p class="text-red-500 text-xs mt-2"><?= $errors['password'] ?></p>
+        <?php endif; ?>
+    </div>
+    <button type="submit">Register</button>
+</form>
+```
+
+go to controller and validate
+
+```php
+// controllers/registration/store.php
+
+$email=$_POST['email'];
+$password=$_POST['password'];
+
+$errors=[];
+
+// validate email format
+if(!Validator::email($email)){
+    $errors['email']='Please provide a valid email address.';
+}
+
+// validate password length (7-255 chars)
+if(!Validator::string($password,7,255)){
+    $errors['password']='Please provide a password of at least seven characters.';
+}
+
+// if there are errors, return to view with errors
+if(!empty($errors)){
+    return require 'views/registration/create.view.php';
+}
+```
+
+check database
+
+```php
+// continue controllers/registration/store.php
+
+// get database instance
+$db=App::resolve(Database::class);
+
+// check if email already exists
+$user=$db->query('select * from users where email=:email',[
+    'email'=>$email
+])->find();
+
+if($user){
+    // user already exists, redirect to login page
+    header('Location: /login');
+    exit();
+}
+```
+
+insert user and start session
+
+```php
+// continue controllers/registration/store.php
+
+// insert new user into database
+$db->query('INSERT INTO users (email,password) VALUES (:email,:password)',[
+    'email'=>$email,
+    'password'=>$password
+]);
+
+// store user data in session (auto login)
+$_SESSION['user']=[
+    'email'=>$email
+];
+
+// redirect to home page after success
+header('Location: /');
+exit();
+```
 
 ```
 ```
-
