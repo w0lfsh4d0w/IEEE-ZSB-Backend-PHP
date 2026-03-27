@@ -1067,5 +1067,57 @@ header('Location: /');
 exit();
 ```
 
+## Middleware intro 
+middleware is a layer runs before the controller to check something like authentication or permissions before access the route
+we use it to protect routes or control access based on user state (guest or auth)
+
+## Example
+in our router when we match the route we check middleware
+```php
+if ($route['uri'] === $uri && $route['method'] === strtoupper($method)) {
+    if ($route['middleware'] === 'guest') {
+        if ($_SESSION['user'] ?? false) {
+            header('location: /');
+            exit();
+        }
+    }
+    if ($route['middleware'] === 'auth') {
+        if (!$_SESSION['user'] ?? false) {
+            header('location: /');
+            exit();
+        }
+    }
+}
+````
+
+guest -> allow only users not logged in
+auth -> allow only logged in users
+
+## How we assign middleware to route
+
+```php
+$router->get('/register','controllers/registration/create.php')->only('guest');
+```
+
+## only() function
+
+this function attach middleware to the last added route
+
+```php
+function only($key){
+    $this->routes[array_key_last($this->routes)]['middleware']=$key;
+    return $this;
+}
+```
+
+flow:
+
+1. user request route
+2. router match uri + method
+3. check if route has middleware
+4. run middleware logic (guest or auth)
+5. if pass -> go to controller
+6. if fail -> redirect user
+
 ```
 ```
