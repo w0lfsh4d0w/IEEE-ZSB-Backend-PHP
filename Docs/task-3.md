@@ -848,3 +848,103 @@ $db = App::resolve(Database::class);
 
 $db->query("DELETE FROM notes WHERE id = 1");
 ```
+___
+
+````markdown id="f9xk2p"
+## Update Note With Patch Request
+any system depends on CRUD (Create, Read, Update, Delete) in our app we already have Create, Read, Delete now we add Update
+in note view page we add edit button
+```php
+<footer class="mt-6">
+    <a href="/note/edit?id=<?= $note['id'] ?>" class="bg-gray-500 text-white px-4 py-2 rounded">Edit</a>
+    <form method="POST">
+        <input type="hidden" name="_method" value="DELETE">
+        <input type="hidden" name="id" value="<?= $note['id'] ?>">
+        <button class="text-sm text-red-500">Delete</button>
+    </form>
+</footer>
+````
+
+update routes
+
+```php
+$router->get('/note/edit','controllers/notes/edit.php');
+```
+
+edit controller: get note, authorize, go to edit view
+
+```php
+<?php
+use Core\App;
+use Core\Database;
+
+$db=App::resolve(Database::class);
+$currentUserId=1;
+
+$note=$db->query('SELECT * FROM notes WHERE id=:id',['id'=>$_GET['id']])->findOrFail();
+authorize($note['user_id']===$currentUserId);
+
+require base_path('views/notes/edit.view.php');
+```
+
+edit view form (PATCH request)
+
+```php
+<form method="POST" action="/notes">
+    <input type="hidden" name="_method" value="PATCH">
+    <input type="hidden" name="id" value="<?= $note['id'] ?>">
+    <div>
+        <label for="body">Description</label>
+        <textarea id="body" name="body"><?= $note['body'] ?></textarea>
+        <?php if(isset($errors['body'])): ?>
+            <p class="text-red-500 text-xs mt-2"><?= $errors['body'] ?></p>
+        <?php endif; ?>
+    </div>
+    <div class="mt-6 flex gap-x-4">
+        <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Update</button>
+        <a href="/notes" class="bg-gray-500 text-white px-4 py-2 rounded">Cancel</a>
+    </div>
+</form>
+```
+
+route for update
+
+```php
+$router->patch('/notes','controllers/notes/update.php');
+```
+
+update controller: authorize, validate, update, redirect
+
+```php
+<?php
+use Core\App;
+use Core\Database;
+use Core\Validator;
+
+$db=App::resolve(Database::class);
+$currentUserId=1;
+
+$note=$db->query('SELECT * FROM notes WHERE id=:id',['id'=>$_POST['id']])->findOrFail();
+authorize($note['user_id']===$currentUserId);
+
+$errors=[];
+if(!Validator::string($_POST['body'],1,1000)){
+    $errors['body']='A body of no more than 1,000 characters is required.';
+}
+
+if(count($errors)){
+    return require base_path('views/notes/edit.view.php');
+}
+
+$db->query('UPDATE notes SET body=:body WHERE id=:id',[
+    'body'=>$_POST['body'],
+    'id'=>$_POST['id']
+]);
+
+header('location: /notes');
+die();
+```
+
+```
+```
+
