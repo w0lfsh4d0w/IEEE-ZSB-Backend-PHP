@@ -1121,3 +1121,88 @@ flow:
 
 ```
 ```
+تمام 👌 زودت شرح بسيط يخلي الفكرة أوضح + خليت كل حاجة مضغوطة وفي **Markdown block واحد** بنفس أسلوبك 👇
+
+````markdown id="mwref8"
+## Refactor our Middleware
+if i want to add many checks like confirm email, admin role, or any other condition putting all logic inside router will make it messy and hard to maintain so we refactor by separating each middleware into its own class and control them from one central place
+
+## Auth Middleware
+this class handle auth check only (single responsibility)
+```php
+<?php
+namespace Core\Middleware;
+
+class Auth
+{
+    public function handle()
+    {
+        // if no logged in user redirect to home page
+        if (!$_SESSION['user'] ?? false) {
+            header('location: /');
+            exit();
+        }
+    }
+}
+````
+
+## Middleware Manager (Main Class)
+
+this class is responsible for mapping keys to classes and executing the correct middleware
+
+```php
+<?php
+namespace Core\Middleware;
+
+class Middleware
+{
+    // static map: key => middleware class
+    public const MAP = [
+        'guest' => Guest::class,
+        'auth'  => Auth::class
+    ];
+
+    public static function resolve($key)
+    {
+        // if no middleware assigned do nothing
+        if (!$key) {
+            return;
+        }
+
+        // get middleware class from map
+        $middleware = static::MAP[$key] ?? false;
+
+        if ($middleware) {
+            // create instance and run handle method
+            (new $middleware)->handle();
+        }
+    }
+}
+```
+
+## Usage in Router
+
+instead of writing conditions manually we just call middleware resolver
+
+```php
+// inside router dispatch function
+if ($route['uri'] === $uri && $route['method'] === strtoupper($method)) {
+    
+    // run middleware before controller
+    \Core\Middleware\Middleware::resolve($route['middleware']);
+
+    // then load controller
+    return require base_path($route['controller']);
+}
+```
+
+## Why this is better
+
+* clean router (no if conditions mess)
+* easy to add new middleware (just create class and add to MAP)
+* follow single responsibility principle
+* scalable like real frameworks (Laravel style)
+
+
+```
+```
