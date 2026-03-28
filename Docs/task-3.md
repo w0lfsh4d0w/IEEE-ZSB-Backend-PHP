@@ -1206,3 +1206,10 @@ if ($route['uri'] === $uri && $route['method'] === strtoupper($method)) {
 
 ```
 ```
+## Make our passwrd Hash
+Hash yes , Beacuse it's  one way no  process can do oopsite but (Encryption) you can solve it if you have a key  
+```php
+$plainPassword = $_POST['password']; 
+// Hashed it before save 
+$hashedPassword = password_hash($plainPassword, PASSWORD_DEFAULT);
+```
