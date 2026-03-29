@@ -1213,3 +1213,121 @@ $plainPassword = $_POST['password'];
 // Hashed it before save 
 $hashedPassword = password_hash($plainPassword, PASSWORD_DEFAULT);
 ```
+___
+
+
+## Login & Logout System
+we want to handle login/logout using session to make our app stateful
+
+## Navbar (UI)
+we check if user exists in session
+```php
+<?php if(isset($_SESSION['user'])): ?>
+    <p>Welcome <?= $_SESSION['user']['email'] ?></p>
+<?php else: ?>
+    <a href="/register">Register</a>
+    <a href="/login">Login</a>
+<?php endif; ?>
+````
+
+## Login Route
+
+```php
+$router->get('/login','controllers/sessions/create.php');
+```
+
+```php
+// controllers/sessions/create.php
+view('sessions/create.view.php');
+```
+
+## Login Form
+
+```html
+<form action="/session" method="POST">
+    <input type="email" name="email" required>
+    <input type="password" name="password" required>
+    <button type="submit">Login</button>
+</form>
+```
+
+## Store (Auth Logic)
+
+```php
+$router->post('/session','controllers/sessions/store.php');
+```
+
+```php
+// controllers/sessions/store.php
+$email=$_POST['email'];
+$password=$_POST['password'];
+
+$db=App::resolve(Database::class);
+
+$user=$db->query('SELECT * FROM users WHERE email=:email',[
+    'email'=>$email
+])->find();
+
+if($user && password_verify($password,$user['password'])){
+    login(['email'=>$user['email']]);
+    header('location: /');
+    exit();
+}
+
+return view('sessions/create.view.php',[
+    'errors'=>['email'=>'wrong email or password']
+]);
+```
+
+## login() helper
+
+```php
+function login($user){
+    $_SESSION['user']=['email'=>$user['email']];
+    session_regenerate_id(true);
+}
+```
+
+## Logout (Important: not GET)
+
+we use form + DELETE request
+
+```html
+<form method="POST" action="/session">
+    <input type="hidden" name="_method" value="DELETE">
+    <button>Logout</button>
+</form>
+```
+
+## Logout Route
+
+```php
+$router->delete('/session','controllers/sessions/destroy.php');
+```
+
+## Destroy Session
+
+```php
+// controllers/sessions/destroy.php
+$_SESSION=[];
+session_destroy();
+
+$params=session_get_cookie_params();
+setcookie('PHPSESSID','',time()-3600,$params['path'],$params['domain'],$params['secure'],$params['httponly']);
+
+header('location: /');
+exit();
+```
+
+flow:
+
+1. user open /login
+2. submit form → POST /session
+3. check user in DB + verify password
+4. if valid → store in session
+5. navbar changes based on session
+6. logout → destroy session + cookie
+
+```
+```
+

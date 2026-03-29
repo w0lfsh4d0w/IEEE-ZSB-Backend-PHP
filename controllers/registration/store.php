@@ -40,9 +40,9 @@ if ($user) {
     ]);
 
     // mark that the user logged in 
-    $_SESSION['user'] = [
+   login([
         'email' => $email
-    ];
+    ]);
     header('location: /');
     exit();
 }
