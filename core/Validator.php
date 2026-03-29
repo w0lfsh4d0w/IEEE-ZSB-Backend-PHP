@@ -1,5 +1,5 @@
 <?php
-
+namespace core ;
 class Validator
 {
     // this fun string is pure fun dont depend on any thing external and font use this-> in it 
