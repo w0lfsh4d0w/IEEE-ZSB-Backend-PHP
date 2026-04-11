@@ -1,4 +1,3 @@
-
 ## Refactor Validator (LoginForm)
 i notice core folder has general classes (router, database) can be reused in any project but controllers + validation logic are project-specific so we create new folder Http for this logic
 
@@ -66,3 +65,100 @@ flow:
 4. if fail → return errors
 5. if success → continue logic
 ___
+
+## Extract an Authenticator Class
+
+Now we want to apply the **Single Responsibility Principle** in our controller.  
+Our controller performs authentication for the user, and this means the controller is doing more than one job.
+
+We will convert **auth** to a noun (**Authentication**) and create a class to handle it.
+
+```php
+// core/Authenticator.php
+
+class Authenticator {
+
+    public function attempt($email, $password) {
+        // 1. Search for the user in the database
+        // 2. Verify that the password matches
+
+        if ($user_found_and_password_matches) {
+            $this->login($user);
+            return true; // Authentication successful
+        }
+
+        return false; // Authentication failed
+    }
+}
+````
+
+Our `attempt` function calls functions like `login` and `logout` as helper functions, and this is not ideal.
+In the authentication class, we should not rely on external functions to complete our logic.
+
+So, we will move the `login` and `logout` functions into our class:
+
+```php
+class Authenticator {
+
+    public function attempt($email, $password) {
+        // ... previous code
+    }
+
+    public function login($user) {
+        // Start session and store user data
+        $_SESSION['user'] = [
+            'email' => $user['email']
+        ];
+    }
+
+    public function logout() {
+        // Destroy session and log the user out
+        // Session destroy...
+    }
+}
+```
+
+We will make `attempt` return `true` if authentication is successful, and `false` if it fails.
+
+---
+
+Our redirect code using `header` is repeated multiple times, so we will create a helper function for it:
+
+```php
+// functions.php (global helper functions file)
+
+function redirect($path) {
+    header("location: {$path}");
+    exit();
+}
+```
+
+---
+
+## Refactoring Duplicate Error Handling
+
+In the controller, we have two blocks of code that are very similar, so we will merge them.
+
+In both form validation and authentication, we redirect the user to the login page and pass an error message.
+
+We will handle this by adding a function inside the `LoginForm` class to store error messages in an errors array:
+
+```php
+// LoginForm.php
+
+class LoginForm {
+    protected $errors = [];
+
+    // Add a custom error message
+    public function error($field, $message) {
+        $this->errors[$field] = $message;
+    }
+
+    // ... rest of the code
+}
+```
+
+```
+```
+___
+
