@@ -162,3 +162,118 @@ class LoginForm {
 ```
 ___
 
+## Manage Session and Apply PRG Pattern
+
+### Problem
+
+When the user submits wrong credentials, the browser saves the last request as a **POST request**.  
+If the user refreshes the page, the POST request will be repeated again.
+
+Imagine this scenario happening on a page responsible for **payment** — this would be a disaster.
+
+---
+
+### Solution: PRG Pattern
+
+What is PRG?
+
+**PRG = POST → Redirect → GET**
+
+- When a POST request happens, we must follow it with a **redirect**.
+- After the redirect, a **GET request** is made.
+- Now, if the user refreshes the page, only the GET request is repeated — not the POST request.
+
+---
+
+### Handling Errors with Session
+
+Our code was like this:
+
+```php
+$_SESSION['errors'] = $formErrors;
+````
+
+The problem with this approach is that if the user refreshes the page, the errors will still be displayed.
+
+We want to make it **stateless**, so when the user refreshes, the errors disappear.
+
+---
+
+### Solution: Flash Session
+
+```php
+$_SESSION['_flash']['errors'] = $formErrors;
+```
+
+Then, in the entry point (after loading the view), we remove the flash data:
+
+```php
+unset($_SESSION['_flash']);
+```
+
+---
+
+### Create a Session Class
+
+To avoid repeating session-related code everywhere, we create a `Session` class to handle everything related to sessions:
+
+```php
+<?php
+
+namespace Core;
+
+class Session
+{
+    public static function has($key)
+    {
+        return (bool) static::get($key);
+    }
+
+    public static function put($key, $value)
+    {
+        $_SESSION[$key] = $value;
+    }
+
+    public static function get($key, $default = null)
+    {
+        if (isset($_SESSION['_flash'][$key])) {
+            return $_SESSION['_flash'][$key];
+        }
+
+        return $_SESSION[$key] ?? $default;
+    }
+
+    public static function flash($key, $value)
+    {
+        $_SESSION['_flash'][$key] = $value;
+    }
+
+    public static function unflash()
+    {
+        unset($_SESSION['_flash']);
+    }
+
+    public static function flush()
+    {
+        $_SESSION = [];
+    }
+
+    public static function destroy()
+    {
+        static::flush();
+        session_destroy();
+        
+        $params = session_get_cookie_params();
+        setcookie(
+            'PHPSESSID',
+            '',
+            time() - 3600,
+            $params['path'],
+            $params['domain'],
+            $params['secure'],
+            $params['httponly']
+        );
+    }
+}
+```
+___
