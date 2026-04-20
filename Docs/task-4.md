@@ -277,3 +277,38 @@ class Session
 }
 ```
 ___
+
+
+## Composer And Autoload
+
+Packages : this is code made by other programmers to solve a problem, like code to connect with an Amazon API. You download the package and use it in your project
+
+in your project you may have a lot of packages, so you will need a tool to manage them, and this tool is called Composer
+
+make autoloading by Composer
+we use PSR-4, this is a global standard used by programmers to arrange files
+
+in our `composer.json` we will configure it to do autoloading
+
+```json
+{
+    "autoload": {
+        "psr-4": {
+            "Core\\": "Core/",
+            "Http\\": "Http/"
+        }
+    }
+}
+```
+
+in our `index.php`
+we will call it
+
+```php
+// we require Composer's magic file to automatically load any class we need later
+require base_path('vendor/autoload.php');
+```
+
+---
+___
+

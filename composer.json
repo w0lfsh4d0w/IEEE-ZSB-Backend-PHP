@@ -1,0 +1,16 @@
+{
+    "name": "mohamed/ieee-zsb-backend-php",
+    "authors": [
+        {
+            "name": "Mohamed Hagag",
+            "email": "hagag0446@gmail.com"
+        }
+    ],
+    "require": {},
+    "autoload": {
+    "psr-4": {
+        "core\\": "core/",
+        "http\\": "http/"
+    }
+}
+}
