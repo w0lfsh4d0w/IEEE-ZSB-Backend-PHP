@@ -74,6 +74,9 @@ function access($needed_rank) {
 }
 ```
 
+
+
+
 ## SQL Injection
 
 If we have posts and every post has an **id**, we take this id from the URL and put it in our query to fetch the data for this id.
